@@ -1,16 +1,11 @@
 import sys
 import cv2 as cv
 from openalpr import Alpr
-# import geocoder
-# import datetime
-import requests
+import sqlite3
 
-WINDOW_NAME = 'openalpr'
-
-r = requests.get("http://licenceplatebrowser.herokuapp.com/plates/")
-data = r.json()
-data = data['results']
-print(r.status_code)
+WINDOW_NAME = 'LicencePlate'
+conn = sqlite3.connect('plates.db')
+c = conn.cursor()
 
 
 def main():
@@ -26,35 +21,29 @@ def main():
         print('Error loading OpenALPR')
         sys.exit(1)
 
-    # g = geocoder.ipinfo('me')
     alpr.set_top_n(20)
     alpr.set_default_region("gr")
 
     while True:
 
         ret_val, frame = cap.read()
-        frame = cv.flip(frame, 1) # we use flip because the video from android cam is mirrored
+        frame = cv.flip(frame, 1)  # we use flip because the video from android cam is mirrored
         if not ret_val:
-            print('VideoCapture.read() failed. Exiting...')
+            print('VideoCapture failed. Exiting...')
             break
 
         cv.imshow(WINDOW_NAME, frame)
         results = alpr.recognize_ndarray(frame)
 
+        for plate in results['results']:
+            item = plate['plate']
+            c.execute("SELECT * FROM plates WHERE PlateNumber = (?)", (item,))
+            x = c.fetchone()
+            if x != None:
+                print(f"Car with Plate {x[0]} INSURED:{x[1]} STOLEN:{x[2]}")
+
         if cv.waitKey(1) == 27:
             break
-
-        for _ in data:
-            for plate in results['results']:
-                # print(plate['plate']) # uncomment to display all found plates
-                if _['plate'] == plate['plate']:
-                    print("Car with Licence Plate:", _['plate'])
-                    if _['insurance'] is True:
-                        print("INSURED")
-                    else:
-                        print("NOT INSURED")
-                    if _['stolen'] is True:
-                        print("STOLEN")
 
     cv.destroyAllWindows()
     cap.release()
