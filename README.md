@@ -7,6 +7,7 @@ that we could access the licence plate for law enforcement reasons or other reas
 
 The licence plates are stored in a website and can be accessed
 by using the API.
+The Website : http://licenceplatebrowser.herokuapp.com/
 
 We store the plates in a sqlite database and check their status every time
 the alpr.recognize_ndarray(frame) returns a plate.
